@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react"
 import { ChevronDown, TrendingUp, TrendingDown, Minus } from "lucide-react"
 import { Tooltip } from "./Tooltip"
+import { getBackendUrl, BITNODES_API_URL } from "@/lib/config"
 
 interface ComparisonData {
   timestamp1: string
@@ -35,23 +36,61 @@ export const SnapshotComparison: React.FC = () => {
   const [comparison, setComparison] = useState<ComparisonData | null>(null)
   const [loading, setLoading] = useState(false)
   const [expanded, setExpanded] = useState(false)
+  const [backendAvailable, setBackendAvailable] = useState(true)
+
+  const BACKEND_URL = getBackendUrl()
 
   useEffect(() => {
     fetchSnapshots()
   }, [])
 
+  const fetchFromBitnodes = async (): Promise<SnapshotItem[]> => {
+    try {
+      const response = await fetch(BITNODES_API_URL)
+      if (response.ok) {
+        const data = await response.json()
+        // Create mock snapshot from Bitnodes data
+        const timestamp = data.timestamp || new Date().toISOString()
+        const totalNodes = Object.keys(data.nodes || {}).length
+        
+        return [
+          {
+            id: "bitnodes_latest",
+            timestamp,
+            total_nodes: totalNodes,
+            top_country: "Multiple"
+          }
+        ]
+      }
+    } catch (error) {
+      console.error("Error fetching from Bitnodes API:", error)
+    }
+    return []
+  }
+
   const fetchSnapshots = async () => {
     try {
-      const response = await fetch("http://localhost:8080/api/snapshots/history")
+      const response = await fetch(`${BACKEND_URL}/api/snapshots/history`, {
+        signal: AbortSignal.timeout(5000) // 5 second timeout
+      })
       if (response.ok) {
         const data = await response.json()
         setSnapshots(data.snapshots)
+        setBackendAvailable(true)
         if (data.snapshots.length > 0) {
           setSelectedSnapshot1(data.snapshots[0].id)
         }
       }
     } catch (error) {
-      console.error("Error fetching snapshots:", error)
+      console.error("Backend not available, falling back to Bitnodes API:", error)
+      setBackendAvailable(false)
+      
+      // Fallback to Bitnodes API
+      const bitnodesSnapshots = await fetchFromBitnodes()
+      if (bitnodesSnapshots.length > 0) {
+        setSnapshots(bitnodesSnapshots)
+        setSelectedSnapshot1(bitnodesSnapshots[0].id)
+      }
     }
   }
 
@@ -60,12 +99,18 @@ export const SnapshotComparison: React.FC = () => {
 
     setLoading(true)
     try {
-      const response = await fetch(
-        `http://localhost:8080/api/snapshots/compare?snapshot1_id=${selectedSnapshot1}&snapshot2_id=${selectedSnapshot2}`
-      )
-      if (response.ok) {
-        const data = await response.json()
-        setComparison(data.comparison.summary_comparison)
+      if (backendAvailable) {
+        const response = await fetch(
+          `${BACKEND_URL}/api/snapshots/compare?snapshot1_id=${selectedSnapshot1}&snapshot2_id=${selectedSnapshot2}`,
+          { signal: AbortSignal.timeout(5000) }
+        )
+        if (response.ok) {
+          const data = await response.json()
+          setComparison(data.comparison.summary_comparison)
+        }
+      } else {
+        // Show message when backend is not available
+        console.log("Backend not available. Using live Bitnodes data.")
       }
     } catch (error) {
       console.error("Error comparing snapshots:", error)

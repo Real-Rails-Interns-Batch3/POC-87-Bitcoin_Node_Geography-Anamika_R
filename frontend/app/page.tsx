@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from "react"
 import Sidebar from "@/components/Sidebar"
 import MapSection from "@/components/MapSection"
+import { getBackendUrl } from "@/lib/config"
 
 interface Node {
   id: number
@@ -142,7 +143,7 @@ export default function Home() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const backendUrl = "http://localhost:8080"
+        const backendUrl = getBackendUrl()
         
         // Fetch Summary
         const summaryRes = await fetch(`${backendUrl}/api/nodes/summary`)

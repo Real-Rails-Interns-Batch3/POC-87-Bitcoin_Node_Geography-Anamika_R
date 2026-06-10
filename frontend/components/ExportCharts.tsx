@@ -51,7 +51,8 @@ export const ExportCharts: React.FC = () => {
   const handleExport = async (option: ExportOption) => {
     setLoading(option.endpoint)
     try {
-      const response = await fetch(`http://localhost:8080${option.endpoint}`)
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080"
+      const response = await fetch(`${backendUrl}${option.endpoint}`)
       if (!response.ok) throw new Error("Export failed")
 
       const blob = await response.blob()
@@ -147,7 +148,8 @@ export const QuickExportButton: React.FC<{ endpoint: string; filename: string }>
   const handleQuickExport = async () => {
     setLoading(true)
     try {
-      const response = await fetch(`http://localhost:8080${endpoint}`)
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080"
+      const response = await fetch(`${backendUrl}${endpoint}`)
       if (!response.ok) throw new Error("Export failed")
 
       const blob = await response.blob()

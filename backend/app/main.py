@@ -6,8 +6,8 @@ from datetime import datetime, timedelta
 from fastapi import FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse, JSONResponse, FileResponse
-from app.nodes_service import get_nodes_data
-from app.data_adapters import (
+from .nodes_service import get_nodes_data
+from .data_adapters import (
     CSVExportAdapter, JSONExportAdapter, SnapshotComparator, 
     ChartDataAdapter, TooltipAdapter
 )

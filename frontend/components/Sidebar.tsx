@@ -427,7 +427,7 @@ export default function Sidebar({
       {/* SECTION F: Download Sample Data button */}
       <div className="p-4 mt-auto">
         <a 
-          href="http://localhost:8080/api/nodes/download"
+          href={`${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080"}/api/nodes/download`}
           download="bitcoin-node-geography.csv"
           className="w-full bg-[#0B1117] hover:bg-[#1F2937] text-[#38BDF8] border border-[#38BDF8]/40 hover:border-[#38BDF8] py-2 px-4 rounded text-xs font-mono font-bold flex items-center justify-center gap-2 transition duration-200 cursor-pointer shadow-[0_0_4px_rgba(56,189,248,0.15)] active:shadow-[0_0_8px_rgba(56,189,248,0.3)]"
         >
