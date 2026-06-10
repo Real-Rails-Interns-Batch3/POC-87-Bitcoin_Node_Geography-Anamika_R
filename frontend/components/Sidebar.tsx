@@ -12,8 +12,12 @@ import {
   Network,
   HelpCircle,
   ShieldCheck,
-  ChevronRight
+  ChevronRight,
+  Info
 } from "lucide-react"
+import { Tooltip, StatTooltip } from "./Tooltip"
+import { SnapshotComparison } from "./SnapshotComparison"
+import { ExportCharts } from "./ExportCharts"
 
 interface Summary {
   total_nodes: number
@@ -220,31 +224,38 @@ export default function Sidebar({
 
         {/* KPIs Grid */}
         <div className="grid grid-cols-2 gap-2 mt-4">
-          <div className="bg-slate-900/60 border border-[#1F2937] p-2.5 rounded">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] text-slate-400 font-mono">REACHABLE NODES</span>
-              <Activity className="w-3.5 h-3.5 text-[#38BDF8] animate-pulse" />
+          <Tooltip content="Total number of reachable Bitcoin nodes on the network right now" position="bottom">
+            <div className="bg-slate-900/60 border border-[#1F2937] p-2.5 rounded cursor-help">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] text-slate-400 font-mono">REACHABLE NODES</span>
+                <Activity className="w-3.5 h-3.5 text-[#38BDF8] animate-pulse" />
+              </div>
+              <div className="text-lg font-bold text-white font-mono mt-1 flex items-baseline gap-1.5">
+                {totalNodesDisplay}
+                <span className="text-[10px] text-emerald-400 font-normal">{summary?.change_24h || "+1.8%"}</span>
+              </div>
             </div>
-            <div className="text-lg font-bold text-white font-mono mt-1 flex items-baseline gap-1.5">
-              {totalNodesDisplay}
-              <span className="text-[10px] text-emerald-400 font-normal">{summary?.change_24h || "+1.8%"}</span>
-            </div>
-          </div>
+          </Tooltip>
 
-          <div className="bg-slate-900/60 border border-[#1F2937] p-2.5 rounded">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] text-slate-400 font-mono">BLOCK HEIGHT</span>
-              <span className="text-[9px] bg-slate-800 text-sky-400 px-1 rounded font-mono">LIVE</span>
+          <Tooltip content="Latest Bitcoin blockchain block height from consensus nodes" position="bottom">
+            <div className="bg-slate-900/60 border border-[#1F2937] p-2.5 rounded cursor-help">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] text-slate-400 font-mono">BLOCK HEIGHT</span>
+                <span className="text-[9px] bg-slate-800 text-sky-400 px-1 rounded font-mono">LIVE</span>
+              </div>
+              <div className="text-lg font-bold text-sky-400 font-mono mt-1">
+                {blockHeightDisplay}
+              </div>
             </div>
-            <div className="text-lg font-bold text-sky-400 font-mono mt-1">
-              {blockHeightDisplay}
-            </div>
-          </div>
+          </Tooltip>
         </div>
 
         {/* Secondary Metric Bar */}
         <div className="mt-2 text-[10px] font-mono text-slate-400 flex items-center justify-between bg-slate-900/40 px-2 py-1 rounded border border-[#1f2937]/50">
           <span className="truncate">Top Host: <b className="text-slate-200">{summary?.top_asn || "..."} ({summary?.top_asn_percentage || 0}%)</b></span>
+          <Tooltip content="Largest hosting provider concentration" position="left">
+            <Info size={12} className="text-cyan-400/60 cursor-help" />
+          </Tooltip>
         </div>
       </div>
 
@@ -404,7 +415,16 @@ export default function Sidebar({
         </div>
       </div>
 
-      {/* SECTION E: Download Sample Data button */}
+      {/* SECTION E: New Features - Snapshot Comparison and Export */}
+      <div className="p-4 border-b border-[#1F2937] space-y-3">
+        <SnapshotComparison />
+      </div>
+
+      <div className="p-4 border-b border-[#1F2937] space-y-3">
+        <ExportCharts />
+      </div>
+
+      {/* SECTION F: Download Sample Data button */}
       <div className="p-4 mt-auto">
         <a 
           href="http://localhost:8080/api/nodes/download"

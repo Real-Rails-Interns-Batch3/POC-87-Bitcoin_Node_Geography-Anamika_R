@@ -1,11 +1,16 @@
 import os
 import json
 import urllib.request
+import urllib.error
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, timedelta
+import hashlib
 
 # Local mock data paths
 MOCK_DATA_PATH = os.path.join(os.path.dirname(__file__), "..", "mock_data", "nodes.json")
+
+# Caching mechanism to avoid repeated API calls
+_cache = {"data": None, "timestamp": None, "ttl_seconds": 300}  # 5 minute cache
 
 def load_local_mock_data():
     """Loads the pre-generated high-fidelity local mock data."""
@@ -33,19 +38,39 @@ def load_local_mock_data():
             "history": []
         }
 
+def _is_cache_valid():
+    """Check if cached data is still valid"""
+    if _cache["data"] is None or _cache["timestamp"] is None:
+        return False
+    elapsed = (datetime.now() - _cache["timestamp"]).total_seconds()
+    return elapsed < _cache["ttl_seconds"]
+
+def _update_cache(data):
+    """Update the cache with new data"""
+    _cache["data"] = data
+    _cache["timestamp"] = datetime.now()
+
 def get_nodes_data():
     """
     Tries to fetch the latest network snapshot from the public Bitnodes API.
     If rate-limited or fails, it automatically falls back to local high-fidelity mock data.
     Uses Pandas to clean and aggregate the live data.
+    Includes caching to avoid repeated API calls.
     """
+    # Check cache first
+    if _is_cache_valid():
+        print("Using cached node data")
+        return _cache["data"]
+    
     url = "https://bitnodes.io/api/v1/snapshots/latest/"
     
     try:
         # Request with a user agent to avoid basic blocks
         req = urllib.request.Request(
             url, 
-            headers={'User-Agent': 'Mozilla/5.0 (Bitcoin Node Resiliency Dashboard)'}
+            headers={
+                'User-Agent': 'Mozilla/5.0 (Bitcoin Node Resiliency Dashboard)'
+            }
         )
         # Timeout after 10 seconds to ensure the API doesn't hang the server
         with urllib.request.urlopen(req, timeout=10) as response:
@@ -55,16 +80,35 @@ def get_nodes_data():
                 # Check for expected structure
                 if "nodes" not in raw_data or not isinstance(raw_data["nodes"], dict):
                     print("Unexpected response structure from Bitnodes API, using local mock data.")
-                    return load_local_mock_data()
+                    data = load_local_mock_data()
+                    _update_cache(data)
+                    return data
                 
-                return process_live_data(raw_data)
+                print(f"Successfully fetched Bitnodes snapshot with {len(raw_data['nodes'])} nodes")
+                data = process_live_data(raw_data)
+                _update_cache(data)
+                return data
             else:
                 print(f"Bitnodes API returned status code {response.status}, falling back to local mock data.")
-                return load_local_mock_data()
+                data = load_local_mock_data()
+                _update_cache(data)
+                return data
                 
+    except urllib.error.HTTPError as e:
+        print(f"Bitnodes API HTTP error {e.code}: {e.reason}. Using local mock data.")
+        data = load_local_mock_data()
+        _update_cache(data)
+        return data
+    except urllib.error.URLError as e:
+        print(f"Bitnodes API connection error: {e.reason}. Using local mock data (automatic mock fallback).")
+        data = load_local_mock_data()
+        _update_cache(data)
+        return data
     except Exception as e:
         print(f"Bitnodes API fetch failed: {e}. Falling back to local mock data (automatic mock fallback).")
-        return load_local_mock_data()
+        data = load_local_mock_data()
+        _update_cache(data)
+        return data
 
 def process_live_data(raw_data):
     """
